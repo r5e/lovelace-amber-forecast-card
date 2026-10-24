@@ -22,8 +22,8 @@ A Home Assistant dashboard card that recreates the look of the Amber Electric we
 - The [Amber Express](https://github.com/hass-energy/amber-express) integration, which provides the forecast data this card reads. The card needs the `detailedForecast` attribute on its price sensors
 - The recorder enabled (it is by default), because past prices come from Home Assistant's history
 
-Support for the official [Home Assistant Amber Electric integration](https://www.home-assistant.io/integrations/amberelectric) should also be possible, but I have only tested with the Amber Express Integration.
-If you wish to test with the Amber Electric Integration, edits to the sensors used will be needed.
+Support for the official [Home Assistant Amber Electric integration](https://www.home-assistant.io/integrations/amberelectric) should also be possible, but I have only tested with the Amber Express Integration and only these attributes are currently read.
+If you wish to test with the Amber Electric Integration, contributions are welcome.
 
 ## Installation
 
@@ -88,6 +88,7 @@ To confirm you have the right sensor, open it in **Developer tools > States** an
 | `show_live` | `true` | Show the live price circle |
 | `expand_current` | `false` | Open the current 30-minute block in its 5-minute view on load |
 | `show_renewables` | `true` | Show the renewables % row |
+| `cell_width`        | `40`    | Width in pixels of each time slot (36 to 80). Smaller values fit more slots. Raise it if you use `decimals`            |
 
 The older single-sensor form (`entity` plus `mode: feedin`) still works.
 
