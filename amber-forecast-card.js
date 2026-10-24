@@ -1,5 +1,5 @@
 /*
- * Amber Forecast Card  v1.0.1
+ * Amber Forecast Card  v1.1.0
  * One card that mirrors the Amber app: live price, a General / Solar
  * toggle, and the 30-minute forecast strip (tap a block for 5-minute intervals).
  * Future prices come from the Amber Express `detailedForecast` attribute; past
@@ -21,12 +21,13 @@
  *   show_live         Show the live price circle. Default true.
  *   expand_current    Expand the current 30-min block on load. Default false.
  *   show_renewables   Show the renewables % row. Default true.
+ *   cell_width        Width in px of each time slot (36-80). Default 40. Raise it if you use decimals.
  *
  * Older single-sensor config (entity + mode: feedin) still works.
  */
 
 
-const CARD_VERSION = "1.0.1";
+const CARD_VERSION = "1.1.0";
 console.info("%c AMBER-FORECAST-CARD %c v" + CARD_VERSION + " ", "color:#0a1230;background:#00e8a0;font-weight:700", "color:#00e8a0;background:#0a1230");
 
 const BUCKET_MS = 30 * 60 * 1000;
@@ -118,7 +119,7 @@ class AmberForecastCard extends HTMLElement {
       historyDone: false,
       fetching: false,
       lastFetch: 0,
-      pendingScroll: true,
+      autoCentre: true,
     });
     this._channels = [];
     if (c.general_entity) this._channels.push(mk("general", "General Usage", c.general_entity, false, false));
@@ -482,17 +483,40 @@ class AmberForecastCard extends HTMLElement {
     return { html: `<div class="scroller">${cols}</div>`, nowKey };
   }
 
-  // Centre an element (by selector) in the strip. Retries for a few frames in case the
-  // card hasn't been laid out yet (width 0) when first rendered.
-  _centreOn(scroller, selector, done, attempt) {
-    const el = scroller.querySelector(selector);
-    if (!el) return;
-    if (scroller.clientWidth === 0 && attempt < 10) {
-      requestAnimationFrame(() => this._centreOn(scroller, selector, done, attempt + 1));
-      return;
+  // Scroll the strip so the target sits in the middle. Always works on the strip that is
+  // on screen now (not one captured earlier), and does nothing until the card has a real
+  // width. A ResizeObserver calls this again as soon as the card is laid out.
+  //   - after expanding/collapsing a block: centre that block
+  //   - otherwise, until the user scrolls or taps: centre the current interval
+  _tryCentre() {
+    const ch = this._channels.find((c) => c.id === this._active);
+    const sc = this.shadowRoot && this.shadowRoot.querySelector(".scroller");
+    if (!ch || !sc || sc.clientWidth === 0) return;
+    let el = null;
+    if (ch.centreKey !== undefined) {
+      el = sc.querySelector(`.group[data-key="${ch.centreKey}"]`);
+      ch.centreKey = undefined;
+    } else if (ch.autoCentre && ch.historyDone) {
+      el = sc.querySelector(".cell.now");
     }
-    scroller.scrollLeft = Math.max(0, el.offsetLeft + el.offsetWidth / 2 - scroller.clientWidth / 2);
-    if (done) done();
+    if (el) sc.scrollLeft = Math.max(0, el.offsetLeft + el.offsetWidth / 2 - sc.clientWidth / 2);
+  }
+
+  _watch(scroller) {
+    if (typeof ResizeObserver === "undefined") return;
+    if (!this._ro) this._ro = new ResizeObserver(() => this._tryCentre());
+    this._ro.disconnect();
+    this._ro.observe(scroller);
+  }
+
+  connectedCallback() {
+    const sc = this.shadowRoot && this.shadowRoot.querySelector(".scroller");
+    if (sc) this._watch(sc);
+    requestAnimationFrame(() => this._tryCentre());
+  }
+
+  disconnectedCallback() {
+    if (this._ro) this._ro.disconnect();
   }
 
   // ---------- render ----------
@@ -503,6 +527,7 @@ class AmberForecastCard extends HTMLElement {
     const ch = this._channels.find((c) => c.id === this._active) || this._channels[0];
     const stateObj = this._hass.states[ch.entity];
 
+    const cw = Math.min(80, Math.max(36, Number(this._config.cell_width) || 40));
     const prev = this.shadowRoot.querySelector(".scroller");
     const prevScroll = prev ? prev.scrollLeft : 0;
 
@@ -557,18 +582,17 @@ class AmberForecastCard extends HTMLElement {
         .note { padding: 0 4px; font-size: 0.75rem; color: var(--warning-color, #f5a623); }
         .scroller { position: relative; display: flex; align-items: stretch; overflow-x: auto;
                     padding: 6px 0 10px; scrollbar-width: thin; }
-        .group { flex: 0 0 auto; display: flex; border: 2px solid transparent; border-radius: 8px;
-                 cursor: pointer; outline: none; }
+        .group { flex: 0 0 auto; display: flex; border-radius: 8px; cursor: pointer; outline: none; }
         .group:hover { background: var(--secondary-background-color); }
-        .group:focus-visible { border-color: var(--primary-color); }
-        .group.open { border-color: var(--primary-text-color); background: none; }
-        .cell { width: 60px; padding: 8px 0 6px; text-align: center; color: var(--secondary-text-color);
+        .group:focus-visible { box-shadow: inset 0 0 0 2px var(--primary-color); }
+        .group.open { box-shadow: inset 0 0 0 2px var(--primary-text-color); background: none; }
+        .cell { width: ${cw}px; padding: 8px 0 6px; text-align: center; color: var(--secondary-text-color);
                 font-variant-numeric: tabular-nums; }
-        .cell .time { font-size: 0.8rem; }
-        .cell .dot { display: block; width: 22px; height: 22px; border-radius: 50%; margin: 10px auto; }
+        .cell .time { font-size: 0.75rem; }
+        .cell .dot { display: block; width: 20px; height: 20px; border-radius: 50%; margin: 10px auto; }
         .cell .dot.sun { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.28); }
-        .cell .price { font-size: 0.95rem; color: var(--primary-text-color); }
-        .cell .ren { font-size: 0.85rem; margin-top: 8px; }
+        .cell .price { font-size: 0.9rem; color: var(--primary-text-color); }
+        .cell .ren { font-size: 0.8rem; margin-top: 8px; }
         .cell.past .time, .cell.past .price, .cell.past .ren { opacity: 0.55; }
         .cell.past .dot { opacity: 0.45; }
         .cell.now .time, .cell.now .ren { color: var(--primary-text-color); font-weight: 600; }
@@ -593,19 +617,25 @@ class AmberForecastCard extends HTMLElement {
     const scroller = this.shadowRoot.querySelector(".scroller");
     if (scroller) {
       if (this._renderedCh === ch.id) scroller.scrollLeft = prevScroll;
-      if (ch.centreKey !== undefined) {
-        // After expanding or collapsing a block, keep that block in the middle.
-        const key = ch.centreKey;
-        ch.centreKey = undefined;
-        this._centreOn(scroller, `.group[data-key="${key}"]`, null, 0);
-      } else if (ch.pendingScroll && ch.historyDone && nowKey !== undefined) {
-        this._centreOn(scroller, ".cell.now", () => (ch.pendingScroll = false), 0);
-      }
+      // Once the user scrolls or touches the strip, stop auto-centring on the current interval.
+      const stop = () => {
+        ch.autoCentre = false;
+      };
+      scroller.addEventListener("pointerdown", stop, { passive: true });
+      // Only horizontal wheel/trackpad movement counts, so scrolling the page past the card doesn't.
+      scroller.addEventListener(
+        "wheel",
+        (e) => {
+          if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) stop();
+        },
+        { passive: true }
+      );
       scroller.querySelectorAll(".group").forEach((el) => {
         const toggle = () => {
           const key = Number(el.dataset.key);
           ch.expandedKey = ch.expandedKey === key ? undefined : key;
           ch.centreKey = key;
+          ch.autoCentre = false;
           this._render();
         };
         el.addEventListener("click", toggle);
@@ -618,13 +648,17 @@ class AmberForecastCard extends HTMLElement {
       });
     }
     this._renderedCh = ch.id;
+    if (scroller) {
+      this._watch(scroller);
+      this._tryCentre();
+    }
 
     this.shadowRoot.querySelectorAll(".tile").forEach((el) => {
       el.addEventListener("click", () => {
         const next = this._channels.find((c) => c.id === el.dataset.ch);
         if (!next || next.id === this._active) return;
         this._active = next.id;
-        next.pendingScroll = true;
+        next.autoCentre = true;
         if (!next.historyDone && !next.fetching) this._fetchHistory(next);
         this._render();
       });
