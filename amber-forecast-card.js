@@ -1,5 +1,5 @@
 /*
- * Amber Forecast Card  v1.0.0
+ * Amber Forecast Card  v1.0.1
  * One card that mirrors the Amber app: live price, a General / Solar
  * toggle, and the 30-minute forecast strip (tap a block for 5-minute intervals).
  * Future prices come from the Amber Express `detailedForecast` attribute; past
@@ -26,7 +26,7 @@
  */
 
 
-const CARD_VERSION = "1.0.0";
+const CARD_VERSION = "1.0.1";
 console.info("%c AMBER-FORECAST-CARD %c v" + CARD_VERSION + " ", "color:#0a1230;background:#00e8a0;font-weight:700", "color:#00e8a0;background:#0a1230");
 
 const BUCKET_MS = 30 * 60 * 1000;
@@ -61,11 +61,21 @@ class AmberForecastCard extends HTMLElement {
     this._renderedCh = undefined;
   }
 
+  // Used by the card picker to pre-fill the config. Prefers sensors that carry the
+  // Amber Express `detailedForecast` attribute, so the official Amber Electric
+  // integration's sensors (which have different attributes) aren't picked by mistake.
   static getStubConfig(hass) {
-    const find = (suffix) => Object.keys(hass.states).find((e) => e.startsWith("sensor.") && e.endsWith(suffix));
+    const ids = Object.keys(hass.states).filter((e) => e.startsWith("sensor."));
+    const pick = (suffix, fallback) => {
+      const matches = ids.filter((e) => e.endsWith(suffix));
+      const withForecast = matches.find(
+        (e) => hass.states[e].attributes && hass.states[e].attributes.detailedForecast
+      );
+      return withForecast || matches[0] || fallback;
+    };
     return {
-      general_entity: find("general_price") || "sensor.amber_express_home_general_price",
-      feed_in_entity: find("feed_in_price") || "sensor.amber_express_home_feed_in_price",
+      general_entity: pick("general_price", "sensor.amber_express_YOUR_SITE_general_price"),
+      feed_in_entity: pick("feed_in_price", "sensor.amber_express_YOUR_SITE_feed_in_price"),
     };
   }
 
@@ -116,6 +126,7 @@ class AmberForecastCard extends HTMLElement {
       this._channels.push(mk("feedin", "Solar Feed-in", c.feed_in_entity, true, !!this._config.invert_feed_in));
     this._active = this._channels[0].id;
     this._renderedCh = undefined;
+    this._rendered = false;
     if (this._hass) this.hass = this._hass;
   }
 
@@ -131,7 +142,8 @@ class AmberForecastCard extends HTMLElement {
         if (stateObj && Date.now() - ch.lastFetch > REFETCH_MS) this._fetchHistory(ch);
       }
     }
-    if (changed) this._render();
+    // Always draw at least once, so a wrong entity ID shows a message instead of a blank card.
+    if (changed || !this._rendered) this._render();
   }
 
   getCardSize() {
@@ -487,6 +499,7 @@ class AmberForecastCard extends HTMLElement {
 
   _render() {
     if (!this._config || !this._hass || !this._channels.length) return;
+    this._rendered = true;
     const ch = this._channels.find((c) => c.id === this._active) || this._channels[0];
     const stateObj = this._hass.states[ch.entity];
 
@@ -498,7 +511,7 @@ class AmberForecastCard extends HTMLElement {
     let nowKey;
     const future = stateObj ? this._intervals(ch, stateObj) : [];
     if (!stateObj) {
-      strip = `<div class="msg">Entity ${ch.entity} not found.</div>`;
+      strip = `<div class="msg">Entity ${ch.entity} not found. Check the entity ID in the card configuration.</div>`;
     } else if (!future.length) {
       strip = `<div class="msg">No forecast data on ${ch.entity}. Check the Amber Express forecast intervals option.</div>`;
     } else {

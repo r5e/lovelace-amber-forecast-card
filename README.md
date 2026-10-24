@@ -1,10 +1,8 @@
-# Home Assistant Lovelace Amber Forecast Card
+# Amber Forecast Card
 
 A Home Assistant dashboard card that recreates the look of the Amber Electric web app / phone app price screen: a live price circle, a General / Solar toggle, and a scrollable 30-minute price forecast that expands into 5-minute intervals.
 
-<img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/99dc0269-6b83-4212-91e3-8aa379e0eb03" />   <img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/d3c7afee-8c69-497f-89cc-1e095461b634" />
-
-
+![Screenshot](images/screenshot.png)
 
 > Unofficial. This project is not affiliated with or endorsed by Amber Electric. "Amber" is their name and trademark.
 
@@ -22,7 +20,7 @@ A Home Assistant dashboard card that recreates the look of the Amber Electric we
 - The [Amber Express](https://github.com/hass-energy/amber-express) integration, which provides the forecast data this card reads. The card needs the `detailedForecast` attribute on its price sensors
 - The recorder enabled (it is by default), because past prices come from Home Assistant's history
 
-Support for the official [Home Assistant Amber Electric integration](https://www.home-assistant.io/integrations/amberelectric) should also be possible, but I have only tested with the Amber Express Integration. If you wish to test with the Amber Electric Integration, edits to the sensors used will be needed.
+Support for the official Home Assistant Amber Electric integration is planned but not yet available.
 
 ## Installation
 
@@ -40,17 +38,37 @@ Support for the official [Home Assistant Amber Electric integration](https://www
 3. Go to **Settings > Dashboards > three-dot menu > Resources** and add `/local/amber-forecast-card.js` as a **JavaScript module**.
 4. Hard refresh your browser.
 
-## Usage
+## Adding the card
+
+1. Open the dashboard you want, click the pencil icon to edit it, then click **Add card**.
+2. Under **By card**, search for **Amber**, and select **Amber Forecast Card**.
+3. The card tries to fill in your Amber Express price sensors automatically. Check that the two entity IDs in the YAML are the right ones for your system (see [Finding your entity IDs](#finding-your-entity-ids)), correct them if not, and click **Save**.
+
+If the card isn't in the list, or you prefer to set it up by hand, scroll to the bottom of the card list, choose the **Manual** card, and paste in the following with your own entity IDs:
 
 ```yaml
 type: custom:amber-forecast-card
-general_entity: sensor.amber_express_home_general_price
-feed_in_entity: sensor.amber_express_home_feed_in_price
+general_entity: sensor.amber_express_YOUR_SITE_general_price
+feed_in_entity: sensor.amber_express_YOUR_SITE_feed_in_price
 ```
 
-Use the entity IDs of your own Amber Express price sensors. You can supply just one of the two entities if you only want one channel.
+The card has no visual editor, so to change options later, edit the card and change the YAML. You can supply just one of the two entities if you only want one channel.
 
-### Options
+If the card shows "Entity ... not found", the entity ID in the YAML doesn't exist. Check it against the steps below.
+
+## Finding your entity IDs
+
+The entity IDs depend on the site name you gave Amber Express, so they will differ from system to system.
+
+1. Go to **Settings > Devices & services > Amber Express** and open your site's device.
+2. In the list of entities, find the **General price** and **Feed in price** sensors. Ignore the forecast, diagnostic and other sensors.
+3. Click the sensor, then the cog icon (Settings) to see its **Entity ID**. It will look something like `sensor.amber_express_<site>_general_price`.
+
+Alternatively, go to **Developer tools > States**, type `price` in the filter box, and look for the two sensors from Amber Express.
+
+To confirm you have the right sensor, open it in **Developer tools > States** and expand its attributes. It should have a `detailedForecast` attribute containing a long list of intervals.
+
+## Options
 
 | Option | Default | Description |
 | --- | --- | --- |
@@ -78,6 +96,7 @@ The older single-sensor form (`entity` plus `mode: feedin`) still works.
 
 ## Troubleshooting
 
+- **"Entity ... not found" appears on the card.** The entity ID in your YAML doesn't exist. See [Finding your entity IDs](#finding-your-entity-ids).
 - **The card shows an old version or an old error after updating.** Your browser has cached the file. Change the resource URL to end in `?v=2` (and so on), reload with dev tools open and the cache disabled, or clear the frontend cache in the mobile app. The browser console prints the loaded version when the card loads.
 - **"History unavailable" appears under the forecast heading.** The card couldn't read history for that sensor. Check that the entity is recorded and not excluded from the recorder.
 - **No forecast data.** Check that the sensor has a `detailedForecast` attribute (Developer Tools > States) and that the Amber Express **Forecast intervals** option is set high enough.
