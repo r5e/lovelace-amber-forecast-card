@@ -2,7 +2,7 @@
 
 A Home Assistant dashboard card that recreates the look of the Amber Electric web app / phone app price screen: a live price circle, a General / Solar toggle, and a scrollable 30-minute price forecast that expands into 5-minute intervals.
 
-<img width="530" height="799" alt="image" src="https://github.com/user-attachments/assets/99dc0269-6b83-4212-91e3-8aa379e0eb03" />         <img width="530" height="802" alt="image" src="https://github.com/user-attachments/assets/d3c7afee-8c69-497f-89cc-1e095461b634" />
+<img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/99dc0269-6b83-4212-91e3-8aa379e0eb03" />   <img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/d3c7afee-8c69-497f-89cc-1e095461b634" />
 
 
 
