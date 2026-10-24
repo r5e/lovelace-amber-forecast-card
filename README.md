@@ -45,6 +45,9 @@ If you wish to test with the Amber Electric Integration, edits to the sensors us
 
 1. Open the dashboard you want, click the pencil icon to edit it, then click **Add card**.
 2. Under **By card**, search for **Amber**, and select **Amber Forecast Card**.
+<img width="630" height="396" alt="image" src="https://github.com/user-attachments/assets/34a7d8f9-d011-4f0a-8eb9-c8ec32aaf52b" />
+
+
 3. The card tries to fill in your Amber Express price sensors automatically. Check that the two entity IDs in the YAML are the right ones for your system (see [Finding your entity IDs](#finding-your-entity-ids)), correct them if not, and click **Save**.
 
 If the card isn't in the list, or you prefer to set it up by hand, scroll to the bottom of the card list, choose the **Manual** card, and paste in the following with your own entity IDs:
