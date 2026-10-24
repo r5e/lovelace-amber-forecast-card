@@ -1,8 +1,10 @@
-# Amber Forecast Card
+# Home Assistant Lovelace Amber Forecast Card
 
 A Home Assistant dashboard card that recreates the look of the Amber Electric web app / phone app price screen: a live price circle, a General / Solar toggle, and a scrollable 30-minute price forecast that expands into 5-minute intervals.
 
-![Screenshot](images/screenshot.png)
+<img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/99dc0269-6b83-4212-91e3-8aa379e0eb03" />   <img width="265" height="400" alt="image" src="https://github.com/user-attachments/assets/d3c7afee-8c69-497f-89cc-1e095461b634" />
+
+
 
 > Unofficial. This project is not affiliated with or endorsed by Amber Electric. "Amber" is their name and trademark.
 
@@ -20,7 +22,8 @@ A Home Assistant dashboard card that recreates the look of the Amber Electric we
 - The [Amber Express](https://github.com/hass-energy/amber-express) integration, which provides the forecast data this card reads. The card needs the `detailedForecast` attribute on its price sensors
 - The recorder enabled (it is by default), because past prices come from Home Assistant's history
 
-Support for the official Home Assistant Amber Electric integration is planned but not yet available.
+Support for the official [Home Assistant Amber Electric integration](https://www.home-assistant.io/integrations/amberelectric) should also be possible, but I have only tested with the Amber Express Integration.
+If you wish to test with the Amber Electric Integration, edits to the sensors used will be needed.
 
 ## Installation
 
